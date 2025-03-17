@@ -1,52 +1,95 @@
-# Prerequisites
-*.d
+#include <stdio.h>
+#include <stdlib.h>
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+typedef struct {
+    int location;   // Location of passenger
+    int destination; // Destination of passenger
+    int assignedDriver; // Assigned driver (ID)
+} RideRequest;
 
-# Linker output
-*.ilk
-*.map
-*.exp
+// Function to assign drivers to a single request (simplified)
+void AssignDrivers(RideRequest* requests, int numRequests) {
+    for (int i = 0; i < numRequests; i++) {
+        // For simplicity, we just assign drivers sequentially based on the request's index
+        requests[i].assignedDriver = i + 1;  // Driver ID is just the index + 1
+    }
+}
 
-# Precompiled Headers
-*.gch
-*.pch
+// Function to merge results (simplified)
+void MergeResults(RideRequest* left, int leftSize, RideRequest* right, int rightSize, RideRequest* result) {
+    int i = 0, j = 0, k = 0;
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
+    // Merge two sorted arrays (in this case, just combining them)
+    while (i < leftSize && j < rightSize) {
+        if (left[i].location < right[j].location) {
+            result[k++] = left[i++];
+        } else {
+            result[k++] = right[j++];
+        }
+    }
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+    // Add remaining elements
+    while (i < leftSize) {
+        result[k++] = left[i++];
+    }
+    while (j < rightSize) {
+        result[k++] = right[j++];
+    }
+}
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
+// Divide and Conquer Function
+void DivideAndConquer_RideSharing(RideRequest* requests, int numRequests) {
+    // Base case: if there is one request, directly assign a driver
+    if (numRequests <= 1) {
+        AssignDrivers(requests, numRequests);
+        return;
+    }
 
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
+    // Divide the array into two halves
+    int middle = numRequests / 2;
+    RideRequest* left = (RideRequest*) malloc(middle * sizeof(RideRequest));
+    RideRequest* right = (RideRequest*) malloc((numRequests - middle) * sizeof(RideRequest));
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+    // Copy data into left and right arrays
+    for (int i = 0; i < middle; i++) {
+        left[i] = requests[i];
+    }
+    for (int i = middle; i < numRequests; i++) {
+        right[i - middle] = requests[i];
+    }
+
+    // Recursively process both halves
+    DivideAndConquer_RideSharing(left, middle);
+    DivideAndConquer_RideSharing(right, numRequests - middle);
+
+    // Merge the results
+    MergeResults(left, middle, right, numRequests - middle, requests);
+
+    // Free allocated memory for left and right
+    free(left);
+    free(right);
+}
+
+int main() {
+    // Sample input: a list of 5 ride-sharing requests
+    RideRequest requests[] = {
+        {10, 50, 0},  // request 1
+        {20, 60, 0},  // request 2
+        {30, 70, 0},  // request 3
+        {40, 80, 0},  // request 4
+        {50, 90, 0}   // request 5
+    };
+    int numRequests = sizeof(requests) / sizeof(requests[0]);
+
+    // Process requests using divide and conquer
+    DivideAndConquer_RideSharing(requests, numRequests);
+
+    // Print out the results (assigned driver)
+    printf("Ride Requests with Assigned Drivers:\n");
+    for (int i = 0; i < numRequests; i++) {
+        printf("Request %d: Location = %d, Destination = %d, Assigned Driver = %d\n",
+            i+1, requests[i].location, requests[i].destination, requests[i].assignedDriver);
+    }
+
+    return 0;
+}
